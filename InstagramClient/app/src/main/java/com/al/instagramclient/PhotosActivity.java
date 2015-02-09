@@ -1,11 +1,14 @@
 package com.al.instagramclient;
 
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -23,6 +26,7 @@ public class PhotosActivity extends ActionBarActivity {
     String CLIENT_ID = "60ba86357d2c4a349a7227d5e0aa6a54";
     private ArrayList<InstagramPhoto> photos;
     private InstagramPhotosAdapter aPhotos;
+    private SwipeRefreshLayout swipeContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,19 +42,33 @@ public class PhotosActivity extends ActionBarActivity {
         lvPhotos.setAdapter(aPhotos);
 
         fetchPopularPhotos();
+
+        // Setting up the swipe refresher:
+        swipeContainer = (SwipeRefreshLayout) findViewById(R.id.swipeContainer);
+        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                fetchPopularPhotos();
+            }
+        });
+        swipeContainer.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
     }
 
 
     public void fetchPopularPhotos() {
         String url = "https://api.instagram.com/v1/media/popular?client_id=" + CLIENT_ID;
+        Log.e("URL\n\n\n\n\n\n\nURL", url);
         AsyncHttpClient httpReqCli = new AsyncHttpClient();
         httpReqCli.get(url, null, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 JSONArray photosJSON = null;
+                photos.clear(); // clear, so that the swipe refresh will be new.
                 try {
                     photosJSON = response.getJSONArray("data");
-                    //Log.w("my app", photosJSON.toString());
                     for (int i = 0; i < photosJSON.length(); i++) {
                         InstagramPhoto photo = new InstagramPhoto();
                         photo.populateWithJSON(photosJSON.getJSONObject(i));
@@ -60,6 +78,8 @@ public class PhotosActivity extends ActionBarActivity {
                     e.printStackTrace();
                 }
                 aPhotos.notifyDataSetChanged();
+                swipeContainer.setRefreshing(false);
+
             }
 
             @Override
@@ -89,5 +109,11 @@ public class PhotosActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void openCommentsActivity(View v) {
+
+        Toast.makeText(getApplicationContext(), "Opening comments", Toast.LENGTH_SHORT).show();
+
     }
 }
